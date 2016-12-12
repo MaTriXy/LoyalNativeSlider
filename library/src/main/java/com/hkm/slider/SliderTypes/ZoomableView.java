@@ -5,7 +5,9 @@ import android.app.Activity;
 import android.content.Context;
 import android.graphics.RectF;
 import android.graphics.Typeface;
+import android.graphics.drawable.Drawable;
 import android.os.Build;
+import android.support.annotation.DrawableRes;
 import android.support.annotation.LayoutRes;
 import android.support.v4.content.ContextCompat;
 import android.util.Log;
@@ -17,7 +19,6 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import com.hkm.slider.R;
-import com.r0adkll.slidr.model.SlidrInterface;
 import com.squareup.picasso.Callback;
 import com.squareup.picasso.Picasso;
 
@@ -30,9 +31,36 @@ import uk.co.senab.photoview.PhotoViewAttacher;
 public class ZoomableView extends BaseSliderView {
     private final Activity activity;
     public final static String LOG_TAG = "ZoomableViewpp";
-    private boolean animateCloseButton = false;
+    private boolean
+            animateCloseButton = false,
+            bottomFadeDescription = true;
     private float initial_zoom_factor = 1.0f;
     protected Typeface typeface;
+    private int corner_button_image;
+    private Drawable corner_button_image_d;
+    private cornerbuttonOnClick mclick = new cornerbuttonOnClick() {
+        @Override
+        public void click(int button_view_id) {
+
+        }
+    };
+    private ZoomCallBack mzoom = new ZoomCallBack() {
+        @Override
+        public void cover(boolean isOn) {
+
+        }
+    };
+
+    /**
+     * the work for the button click listener
+     */
+    public interface cornerbuttonOnClick {
+        void click(int button_view_id);
+    }
+
+    public interface ZoomCallBack {
+        void cover(boolean isOn);
+    }
 
     public ZoomableView(Activity context) {
         super(context);
@@ -55,6 +83,32 @@ public class ZoomableView extends BaseSliderView {
         return this;
     }
 
+    public ZoomableView setZoomCallBack(final ZoomCallBack zcb) {
+        mzoom = zcb;
+        return this;
+    }
+
+    public ZoomableView setCornerButtonImageRes(final @DrawableRes int drawable) {
+        corner_button_image = drawable;
+        return this;
+    }
+
+    public ZoomableView setCornerButtonImageDrawable(final Drawable drawable) {
+        corner_button_image_d = drawable;
+        return this;
+    }
+
+    public ZoomableView setCornerButtonClickListener(final cornerbuttonOnClick cb) {
+        mclick = cb;
+        return this;
+    }
+
+
+    public ZoomableView setButtomDescription(boolean enableDesc) {
+        bottomFadeDescription = enableDesc;
+        return this;
+    }
+
     /**
      * the extended class have to implement getView(), which is called by the adapter,
      * every extended class response to render their own view.
@@ -70,7 +124,7 @@ public class ZoomableView extends BaseSliderView {
 
     protected void filter_apply_event_to_view(View viewLayout) {
         final LinearLayout cover = (LinearLayout) viewLayout.findViewById(R.id.ssz_bottom_caption);
-        final ImageButton close = (ImageButton) viewLayout.findViewById(R.id.ssz_frame_close_window_button);
+        final ImageButton cornerbutton = (ImageButton) viewLayout.findViewById(R.id.ssz_frame_close_window_button);
         final ProgressBar circle = (ProgressBar) viewLayout.findViewById(R.id.ns_loading_progress);
         final PhotoView mImage = (PhotoView) viewLayout.findViewById(R.id.ssz_uk_co_senab_photoview);
         final TextView mCurrMatrixTv = (TextView) viewLayout.findViewById(R.id.ssz_debug_textview);
@@ -85,34 +139,53 @@ public class ZoomableView extends BaseSliderView {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
                 transitioner.enableTransitionType(LayoutTransition.CHANGING);
             }
-            cover.setLayoutTransition(transitioner);
+            if (bottomFadeDescription) {
+                cover.setLayoutTransition(transitioner);
+            } else {
+                cover.setVisibility(View.GONE);
+            }
         }
 
-
-        close.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                //  finish();
-            }
-        });
-
+        if (corner_button_image_d != null) {
+            cornerbutton.setImageDrawable(corner_button_image_d);
+            cornerbutton.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    mclick.click(v.getId());
+                }
+            });
+        } else if (corner_button_image > 0) {
+            cornerbutton.setImageResource(corner_button_image);
+            cornerbutton.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    mclick.click(v.getId());
+                }
+            });
+        } else {
+            cornerbutton.setVisibility(View.GONE);
+        }
 
         Log.d(LOG_TAG, "load image with url : " + getUrl() + " title:" + getDescription());
         Picasso.with(mContext).load(getUrl()).into(mImage, new Callback() {
             @Override
             public void onSuccess() {
-                mAttacher.setOnMatrixChangeListener(new MatrixChangeListener(mAttacher, cover, close));
+
+                mAttacher.setOnMatrixChangeListener(new MatrixChangeListener(mAttacher, cover, cornerbutton));
+
                 mAttacher.setOnPhotoTapListener(new PhotoTapListener());
                 circle.setVisibility(View.GONE);
                 mImage.post(new Runnable() {
                     @Override
                     public void run() {
-                        mAttacher.setScale(2f, mImage.getWidth() / 2, mImage.getHeight() / 2, true);
+                        mAttacher.setScale(
+                                initial_zoom_factor,
+                                true);
                     }
                 });
-
                 //slidrInf.unlock();
-                mAttacher.setScale(initial_zoom_factor);
+                //mImage.getImmImage.getWidth()
+                //mAttacher.setScale(initial_zoom_factor);
             }
 
             @Override
@@ -157,7 +230,7 @@ public class ZoomableView extends BaseSliderView {
         private final PhotoViewAttacher mAttacher;
         private final LinearLayout cover;
         private final ImageButton button;
-        private SlidrInterface mSlidr;
+
 
         public MatrixChangeListener(PhotoViewAttacher mAttacher, LinearLayout cover, final ImageButton button_close) {
             this.mAttacher = mAttacher;
@@ -165,26 +238,18 @@ public class ZoomableView extends BaseSliderView {
             this.cover = cover;
         }
 
-        public MatrixChangeListener(SlidrInterface controller, PhotoViewAttacher mAttacher, LinearLayout cover, final ImageButton button_close) {
-            this(mAttacher, cover, button_close);
-            mSlidr = controller;
-        }
 
         @Override
         public void onMatrixChanged(RectF rect) {
             try {
                 if (mAttacher.getScale() > 1.5f) {
                     cover_on(cover, button);
+                    mzoom.cover(true);
                 } else {
                     cover_off(cover, button);
+                    mzoom.cover(false);
                 }
 
-                if (mSlidr != null) {
-                    if (mAttacher.getScale() == 1.0f)
-                        mSlidr.unlock();
-                    else
-                        mSlidr.lock();
-                }
 
             } catch (Exception e) {
                 Log.d(LOG_TAG, "onMatrix Changed" + e.getMessage());
@@ -193,35 +258,30 @@ public class ZoomableView extends BaseSliderView {
     }
 
 
-    private void cover_off(LinearLayout cover, final ImageButton button_close) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB_MR1) {
+    private void cover_off(LinearLayout cover, final ImageButton cornerButton) {
+        if (bottomFadeDescription && Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB_MR1)
             cover.animate().alpha(0f);
-            if (animateCloseButton)
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
-                    button_close.animate().alpha(0f).withEndAction(new Runnable() {
-                        @Override
-                        public void run() {
-                            button_close.setEnabled(false);
-                        }
-                    });
-                }
-        }
 
+        if (animateCloseButton && cornerButton.getVisibility() != View.GONE && Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN)
+            cornerButton.animate().alpha(0f).withEndAction(new Runnable() {
+                @Override
+                public void run() {
+                    cornerButton.setEnabled(false);
+                }
+            });
     }
 
-    private void cover_on(LinearLayout cover, final ImageButton button_close) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB_MR1) {
+    private void cover_on(LinearLayout cover, final ImageButton cornerButton) {
+        if (bottomFadeDescription && Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB_MR1)
             cover.animate().alpha(1f);
-            if (animateCloseButton)
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
-                    button_close.animate().alpha(1f).withEndAction(new Runnable() {
-                        @Override
-                        public void run() {
-                            button_close.setEnabled(true);
-                        }
-                    });
+
+        if (animateCloseButton && cornerButton.getVisibility() != View.GONE && Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN)
+            cornerButton.animate().alpha(1f).withEndAction(new Runnable() {
+                @Override
+                public void run() {
+                    cornerButton.setEnabled(true);
                 }
-        }
+            });
 
     }
 

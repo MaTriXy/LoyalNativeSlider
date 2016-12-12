@@ -1,47 +1,28 @@
 # Loyal Native Slider
-[![Android Arsenal](https://img.shields.io/badge/Android%20Arsenal-Loyal%20Native%20Slider-brightgreen.svg?style=flat)][6][ ![Download](https://api.bintray.com/packages/jjhesk/maven/library/images/download.svg) ][7][![Android Gems](http://www.android-gems.com/badge/jjhesk/LoyalNativeSlider.svg?branch=master)][8][![Gitter](https://badges.gitter.im/Join Chat.svg)][9][![Bitdeli Badge](https://d2weczhvl823v0.cloudfront.net/jjhesk/loyalnativeslider/trend.png)][13]
+[![Android Arsenal](https://img.shields.io/badge/Android%20Arsenal-Loyal%20Native%20Slider-brightgreen.svg?style=flat)][6][ ![Download](https://api.bintray.com/packages/jjhesk/maven/library/images/download.svg) ][7][![Android Gems](http://www.android-gems.com/badge/jjhesk/LoyalNativeSlider.svg?branch=master)][8][![Gitter](https://badges.gitter.im/Join Chat.svg)][9]
 
-
- [![Throughput Graph](https://graphs.waffle.io/jjhesk/LoyalNativeSlider/throughput.svg)][14]
-
-Master: [![Build Status](https://travis-ci.org/jjhesk/LoyalNativeSlider.svg)](https://travis-ci.org/jjhesk/LoyalNativeSlider)
-
-Dev: [![Build Status](https://travis-ci.org/jjhesk/LoyalNativeSlider.svg?branch=dev)](https://travis-ci.org/jjhesk/LoyalNativeSlider)
+[![Throughput Graph](https://graphs.waffle.io/jjhesk/LoyalNativeSlider/throughput.svg)][14]
 
 This is an amazing image slider for the Android platform. I decided to open source this because there is really not an attractive, convenient slider widget in Android. You can easily load images from an internet URL, drawable, or file. And there are many kinds of amazing animations you can choose. :-D
 
-##Features
-
-
-###v1.5.0
-- [x] Zoomable view
-- [X] news feed view
-
-
-###v1.4.1
-- [x] Add local storage enable for picasso
-- [X] adapting multiple images in one slide config 2-4
-
-=======
+##Demo Apk
+Please also check the latest release testing apk from the [log history](loghistory.md)
 
 ## Usage
-
 ### Step 1
-
 #### Gradle
 [![Download](https://api.bintray.com/packages/jjhesk/maven/library/images/download.svg) ](https://bintray.com/jjhesk/maven/library/_latestVersion)
+
+JCenter is the place to find and share popular Apache Maven packages for use by Maven, Gradle, Ivy, SBT, etc.
+For the most comprehensive collection of artifacts, point your Maven at: `http://jcenter.bintray.com`
+
 ```gradle
-
-repositories {maven { url "http://dl.bintray.com/jjhesk/maven" }}
-
 dependencies {
-    compile 'com.hkm.loyalslider:library:1.5.0'
+    compile 'com.hkm.loyalslider:library:1.9.4'
 }
-
 ```
 
-
-### Step 2
+### Step 2 - setup the xml
 
 Add permissions (if necessary) to your `AndroidManifest.xml`
 
@@ -67,9 +48,9 @@ Add the Slider to your layout:
         android:layout_width="match_parent"
         android:layout_height="200dp"
 />
-```        
+```
 
-There are some default indicators. If you want to use a provided indicator:
+There are some default indicators. If you want to use a provided indicator you can add this optionally
 
 ```xml
 <com.hkm.slider.Indicators.PagerIndicator
@@ -80,22 +61,29 @@ There are some default indicators. If you want to use a provided indicator:
         />
 ```
 
-[Code example][10]
+### Step 4
+Implement the SliderLayout component in the fragment or activity
+
+### Step 5
+making some small adjustments
+
+### Step 6
+setup the slider layout either by your own custom extension or using the existing provided slides from the folder SlideType
+
+### Step 7
+binding data from json or your own data providers
+
+### Step 8
+completion of the `arrayList` with your own type `T` , `T` as your data type
+
+### Step 9
+call `mSliderLayout.loadSliderList` or `.addSliderList` or `.addSlider` independently. finally, check the result. For more variant and options you may
 
 ====
 
 ## Preview
-<img src="scn/device-2015-06-17-142823.png" width="300px"/>
-<img src="scn/device-2015-06-17-150718.png" width="300px"/>
-<img src="scn/device-2015-06-17-150829.png" width="300px"/>
-
-<img src="scn/WW_PhoneKOT49Hhesk11262015103358.png" width="300px"/>
-<img src="scn/WW_PhoneKOT49Hhesk11262015103406.png" width="300px"/>
-
-<img src="scn/anglerMDB08Lhesk11262015104332.png" width="450px"/>
-<img src="scn/anglerMDB08Lhesk11262015104346.png" width="450px"/>
-
-<img src="scn/anglerMDB08Lhesk11262015104354.png" width="450px"/>
+![zoom in slider](http://i.giphy.com/tGjjsefxE8Cze.gif)
+![multislide](http://i.giphy.com/NtCRzwkgbIupG.gif)
 
 
 ## New Version Demo:
@@ -132,18 +120,18 @@ Please visit [Wiki](https://github.com/daimajia/AndroidImageSlider/wiki) for the
 - [NineOldAndroids][3]
 - [ViewPagerTransforms][4]
 - [Android Image Slider][5]
+- [Glide][15]
 
 If there are someone who I do not mention here, please accept my sincere appologies and tell me.
 
-
-
-###Donation:
+###Bitcoin Donation Accepted
+![wallet](http://s32.postimg.org/sdd1oio1t/qrwallet.jpg)
 Open Donation - USD: [![OPEN](http://i.imgur.com/wUWK6e1.jpg)][1]
 
 License
 --------
 
-    Copyright 2015 JJHesk
+    Copyright 2016 jjHesk
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -171,5 +159,5 @@ License
 [10]: https://github.com/jjhesk/LoyalNativeSlider/blob/master/AppDemo/src/main/java/com/hkm/sliderdemo/MainActivity.java
 [11]: https://github.com/jjhesk/LoyalNativeSlider/blob/master/library/src/main/res/values/attrs.xml#L3-L54
 [12]: https://github.com/daimajia/AndroidImageSlider/releases/download/v1.0.9/AndroidImageSlider-Eclipse.zip
-[13]: https://bitdeli.com/free
 [14]: https://waffle.io/jjhesk/LoyalNativeSlider/metrics
+[15]: https://github.com/bumptech/glide

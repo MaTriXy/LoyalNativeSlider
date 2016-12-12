@@ -1,0 +1,40 @@
+apply plugin: 'com.android.application'
+
+android {
+    compileSdkVersion ANDROID_BUILD_SDK_VERSION as int
+    buildToolsVersion ANDROID_BUILD_TOOLS_VERSION
+
+    defaultConfig {
+        applicationId "com.hkm.loyalns"
+        minSdkVersion ANDROID_BUILD_MIN_SDK_VERSION as int
+        targetSdkVersion ANDROID_BUILD_TARGET_SDK_VERSION as int
+        versionCode 1
+        versionName "1.0"
+    }
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_7
+    }
+}
+repositories {
+    jcenter()
+    maven { url "http://dl.bintray.com/jjhesk/maven" }
+    maven { url 'https://oss.sonatype.org/content/repositories/snapshots/' }
+}
+dependencies {
+    compile fileTree(include: ['*.jar'], dir: 'libs')
+    compile supportDependencies.appCompat
+    compile supportDependencies.design
+    compile supportDependencies.support
+    compile 'com.daimajia.androidanimations:library:1.0.3@aar'
+
+    compile 'com.hkm.ezwebview:library:1.2.6'
+   // compile 'com.hb:sdklibrary:0.6.0'
+    testCompile 'junit:junit:4.12'
+    compile project(':library')
+}

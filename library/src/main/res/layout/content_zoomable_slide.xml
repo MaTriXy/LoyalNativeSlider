@@ -6,7 +6,12 @@
     <uk.co.senab.photoview.PhotoView
         android:id="@id/ssz_uk_co_senab_photoview"
         android:layout_width="match_parent"
-        android:layout_height="match_parent" />
+        android:layout_height="match_parent"
+
+        />
+<!--
+    android:scaleType="fitCenter"
+-->
 
     <TextView
         android:id="@id/ssz_debug_textview"
@@ -47,8 +52,9 @@
         android:layout_width="40dp"
         android:layout_height="40dp"
         android:layout_alignParentLeft="true"
-
         android:layout_alignParentTop="true"
         android:layout_margin="10dp"
-        android:scaleType="fitXY" />
+        android:scaleType="center" />
+
+
 </RelativeLayout>

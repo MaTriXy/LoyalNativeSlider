@@ -1,5 +1,6 @@
 package com.hkm.slider.SliderTypes;
 
+import android.Manifest;
 import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
 import android.app.Dialog;
@@ -9,22 +10,30 @@ import android.app.FragmentManager;
 import android.content.ContentResolver;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.Looper;
 import android.support.annotation.DrawableRes;
 import android.support.annotation.Nullable;
+import android.support.annotation.StringRes;
 import android.support.v7.app.AlertDialog;
-import android.util.Log;
 import android.view.View;
 import android.widget.ImageView;
-import android.widget.Toast;
 
+import com.bumptech.glide.DrawableTypeRequest;
+import com.bumptech.glide.Glide;
+import com.bumptech.glide.RequestManager;
+import com.bumptech.glide.load.engine.DiskCacheStrategy;
+import com.bumptech.glide.load.resource.drawable.GlideDrawable;
+import com.bumptech.glide.request.RequestListener;
 import com.hkm.slider.CapturePhotoUtils;
+import com.hkm.slider.LoyalUtil;
 import com.hkm.slider.R;
+import com.hkm.slider.SliderLayout;
 import com.squareup.picasso.Callback;
 import com.squareup.picasso.MemoryPolicy;
 import com.squareup.picasso.Picasso;
@@ -32,11 +41,7 @@ import com.squareup.picasso.RequestCreator;
 import com.squareup.picasso.Target;
 
 import java.io.File;
-import java.io.IOException;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.logging.Handler;
+import java.lang.ref.WeakReference;
 
 /**
  * When you want to make your own slider view, you must extends from this class.
@@ -46,8 +51,9 @@ import java.util.logging.Handler;
  * if you want to show progressbar, you just need to set a progressbar id as @+id/loading_bar.
  */
 public abstract class BaseSliderView {
-
+    protected Object current_image_holder;
     protected Context mContext;
+    protected boolean imageLoaded = false;
     private RequestCreator rq = null;
     private final Bundle mBundle;
     protected int mTargetWidth, mTargetHeight;
@@ -64,7 +70,7 @@ public abstract class BaseSliderView {
     private String mUrl;
     private File mFile;
     private int mRes;
-
+    private int mSlideNumber;
     protected OnSliderClickListener mOnSliderClickListener;
 
     protected boolean mErrorDisappear, mLongClickSaveImage;
@@ -80,6 +86,15 @@ public abstract class BaseSliderView {
      */
     protected ScaleType mScaleType = ScaleType.Fit;
 
+    /**
+     * reference of the parent
+     */
+    protected WeakReference<SliderLayout> sliderContainer;
+
+    public void setSliderContainerInternal(SliderLayout b) {
+        this.sliderContainer = new WeakReference<SliderLayout>(b);
+    }
+
     public enum ScaleType {
         CenterCrop, CenterInside, Fit, FitCenterCrop
     }
@@ -89,6 +104,14 @@ public abstract class BaseSliderView {
         this.mBundle = new Bundle();
         mLongClickSaveImage = false;
         mImageLocalStorageEnable = false;
+    }
+
+    public final void setSlideOrderNumber(final int order) {
+        mSlideNumber = order;
+    }
+
+    public final int getSliderOrderNumber() {
+        return mSlideNumber;
     }
 
     /**
@@ -235,18 +258,18 @@ public abstract class BaseSliderView {
     }
 
     protected View.OnLongClickListener mDefaultLongClickListener = null;
-    protected FragmentManager fmg;
+    protected WeakReference<FragmentManager> fmg;
 
     /**
      * to enable the slider for saving images
      *
-     * @param fmg FragmentManager
+     * @param mfmg FragmentManager
      * @return this thing
      */
-    public BaseSliderView enableSaveImageByLongClick(FragmentManager fmg) {
+    public BaseSliderView enableSaveImageByLongClick(FragmentManager mfmg) {
         mLongClickSaveImage = true;
         mDefaultLongClickListener = null;
-        this.fmg = fmg;
+        this.fmg = new WeakReference<FragmentManager>(mfmg);
         return this;
     }
 
@@ -262,10 +285,10 @@ public abstract class BaseSliderView {
         return this;
     }
 
-    public BaseSliderView setSliderLongClickListener(View.OnLongClickListener listen, FragmentManager fmg) {
+    public BaseSliderView setSliderLongClickListener(View.OnLongClickListener listen, FragmentManager mfmg) {
         mDefaultLongClickListener = listen;
         mLongClickSaveImage = false;
-        this.fmg = fmg;
+        this.fmg = new WeakReference<FragmentManager>(mfmg);
         return this;
     }
 
@@ -289,25 +312,116 @@ public abstract class BaseSliderView {
         return this;
     }
 
+
+    protected void bindEventShowGlide(final View v, final ImageView targetImageView) {
+        v.setOnClickListener(click_triggered);
+        final RequestManager glideRM = Glide.with(mContext);
+        DrawableTypeRequest rq;
+        if (mUrl != null) {
+            rq = glideRM.load(mUrl);
+        } else if (mFile != null) {
+            rq = glideRM.load(mFile);
+        } else if (mRes != 0) {
+            rq = glideRM.load(mRes);
+        } else {
+            return;
+        }
+
+        if (getEmpty() != 0) {
+            rq.placeholder(getEmpty());
+        }
+        if (getError() != 0) {
+            rq.error(getError());
+        }
+
+        switch (mScaleType) {
+            case Fit:
+                rq.fitCenter();
+                break;
+            case CenterCrop:
+                rq.centerCrop();
+                break;
+            case CenterInside:
+                rq.fitCenter();
+                break;
+        }
+        rq.diskCacheStrategy(DiskCacheStrategy.ALL);
+        if (mTargetWidth > 0 || mTargetHeight > 0) {
+            rq.override(mTargetWidth, mTargetHeight);
+        }
+        rq.listener(new RequestListener<String, GlideDrawable>() {
+            @Override
+            public boolean onException(Exception e, String model, com.bumptech.glide.request.target.Target<GlideDrawable> target, boolean isFirstResource) {
+                reportStatusEnd(false);
+                return false;
+            }
+
+
+            @Override
+            public boolean onResourceReady(GlideDrawable resource, String model, com.bumptech.glide.request.target.Target<GlideDrawable> target, boolean isFromMemoryCache, boolean isFirstResource) {
+                hideLoadingProgress(v);
+                triggerOnLongClick(v);
+                reportStatusEnd(true);
+                return false;
+            }
+        });
+        rq.crossFade();
+        additionalGlideModifier(rq);
+        rq.into(targetImageView);
+    }
+
+    protected void additionalGlideModifier(DrawableTypeRequest mDrawableTypeRequest) {
+
+    }
+
+    protected void hideLoadingProgress(View mView) {
+        if (mView.findViewById(R.id.ns_loading_progress) != null) {
+            hideoutView(mView.findViewById(R.id.ns_loading_progress));
+        }
+    }
+
+    /**
+     * when {@link #mLongClickSaveImage} is true and this function will be triggered to watch the long action run
+     *
+     * @param mView the slider view object
+     */
+    private void triggerOnLongClick(View mView) {
+        if (mLongClickSaveImage && fmg != null) {
+            if (mDefaultLongClickListener == null) {
+                mDefaultLongClickListener = new View.OnLongClickListener() {
+                    @TargetApi(Build.VERSION_CODES.HONEYCOMB)
+                    @Override
+                    public boolean onLongClick(View v) {
+                        final saveImageDialog saveImageDial = new saveImageDialog();
+                        saveImageDial.show(fmg.get(), mDescription);
+                        return false;
+                    }
+                };
+            }
+            mView.setOnLongClickListener(mDefaultLongClickListener);
+        }
+    }
+
+    private final View.OnClickListener click_triggered = new View.OnClickListener() {
+        @Override
+        public void onClick(View v) {
+            if (mOnSliderClickListener != null) {
+                mOnSliderClickListener.onSliderClick(BaseSliderView.this);
+            }
+        }
+    };
+
     /**
      * When you want to implement your own slider view, please call this method in the end in `getView()` method
      *
      * @param v               the whole view
      * @param targetImageView where to place image
      */
-    protected void bindEventAndShow(final View v, final ImageView targetImageView) {
-        final BaseSliderView me = this;
-        v.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (mOnSliderClickListener != null) {
-                    mOnSliderClickListener.onSliderClick(me);
-                }
-            }
-        });
-
-        mLoadListener.onStart(me);
-        Picasso p = Picasso.with(mContext);
+    protected void bindEventAndShowPicasso(final View v, final ImageView targetImageView) {
+        current_image_holder = targetImageView;
+        v.setOnClickListener(click_triggered);
+        mLoadListener.onStart(this);
+        final Picasso p = Picasso.with(mContext);
         rq = null;
         if (mUrl != null) {
             rq = p.load(mUrl);
@@ -333,6 +447,7 @@ public abstract class BaseSliderView {
         if (mImageLocalStorageEnable) {
             rq.memoryPolicy(MemoryPolicy.NO_STORE, MemoryPolicy.NO_CACHE);
         }
+
         switch (mScaleType) {
             case Fit:
                 rq.fit();
@@ -348,98 +463,156 @@ public abstract class BaseSliderView {
         rq.into(targetImageView, new Callback() {
             @Override
             public void onSuccess() {
-                if (v.findViewById(R.id.ns_loading_progress) != null) {
-                    hideoutView(v.findViewById(R.id.ns_loading_progress));
-                }
-
-                if (mLongClickSaveImage && fmg != null) {
-                    mDefaultLongClickListener = new View.OnLongClickListener() {
-                        @TargetApi(Build.VERSION_CODES.HONEYCOMB)
-                        @Override
-                        public boolean onLongClick(View v) {
-                            final saveImageDialog saveImageDial = new saveImageDialog();
-                            saveImageDial.show(fmg, mDescription);
-                            return false;
-                        }
-                    };
-                    v.setOnLongClickListener(mDefaultLongClickListener);
-                }
+                imageLoaded = true;
+                hideLoadingProgress(v);
+                triggerOnLongClick(v);
+                reportStatusEnd(true);
             }
 
             @Override
             public void onError() {
-                if (mLoadListener != null) {
-                    mLoadListener.onEnd(false, me);
-                }
+                reportStatusEnd(false);
             }
         });
     }
 
+    protected void applyImageWithGlide(View v, final ImageView targetImageView) {
+        current_image_holder = targetImageView;
+        LoyalUtil.glideImplementation(getUrl(), targetImageView, getContext());
+        hideLoadingProgress(v);
+        triggerOnLongClick(v);
+        reportStatusEnd(true);
+        imageLoaded = true;
+    }
+
+    protected void applyImageWithPicasso(View v, final ImageView targetImageView) {
+        current_image_holder = targetImageView;
+        LoyalUtil.picassoImplementation(getUrl(), targetImageView, getContext());
+        hideLoadingProgress(v);
+        triggerOnLongClick(v);
+        imageLoaded = true;
+        reportStatusEnd(true);
+    }
+
+    protected void applyImageWithSmartBoth(View v, final ImageView target) {
+        current_image_holder = target;
+        LoyalUtil.hybridImplementation(getUrl(), target, getContext());
+        hideLoadingProgress(v);
+        triggerOnLongClick(v);
+        imageLoaded = true;
+        reportStatusEnd(true);
+    }
+
+
+    protected void applyImageWithSmartBothAndNotifyHeight(View v, final ImageView target) {
+        current_image_holder = target;
+        LoyalUtil.hybridImplementation(getUrl(), target, getContext(), new Runnable() {
+            @Override
+            public void run() {
+                imageLoaded = true;
+                if (sliderContainer == null) return;
+                if (sliderContainer.get().getCurrentPosition() == getSliderOrderNumber()) {
+                    sliderContainer.get().setFitToCurrentImageHeight();
+                }
+
+            }
+        });
+        hideLoadingProgress(v);
+        triggerOnLongClick(v);
+        reportStatusEnd(true);
+    }
+
+    private void reportStatusEnd(boolean b) {
+        if (mLoadListener != null) {
+            mLoadListener.onEnd(b, this);
+        }
+    }
+
     final android.os.Handler nh = new android.os.Handler();
 
-    @TargetApi(Build.VERSION_CODES.HONEYCOMB)
-    protected void saveImage(RequestCreator mResquest_creator) {
-        final Target target = new Target() {
+    private int notice_save_image_success = R.string.success_save_image;
 
-            /**
-             * Callback when an image has been successfully loaded.
-             * <p/>
-             * <strong>Note:</strong> You must not recycle the bitmap.
-             *
-             * @param bitmap  bitmap data
-             * @param from               from the source
-             */
+    public final void setMessageSaveImageSuccess(@StringRes final int t) {
+        notice_save_image_success = t;
+    }
+
+    protected void workAroundGetImagePicasso() {
+
+        final Target target = new Target() {
             @Override
             public void onBitmapLoaded(final Bitmap bitmap, Picasso.LoadedFrom from) {
-                CapturePhotoUtils.insertImage(
-                        mContext,
-                        bitmap,
-                        mDescription, new CapturePhotoUtils.Callback() {
-                            @Override
-                            public void complete() {
-                                nh.post(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        final SMessage sm = SMessage.message("This image is kept in your photo directory now.");
-                                        sm.show(fmg, "done");
-                                    }
-                                });
-                            }
-                        }
-                );
 
-                //  });
             }
 
-            /**
-             * Callback indicating the image could not be successfully loaded.
-             * <strong>Note:</strong> The passed {@link Drawable} may be {@code null} if none has been
-             * specified via {@link RequestCreator#error(Drawable)}
-             * or {@link RequestCreator#error(int)}.
-             *
-             * @param errorDrawable  when the image is failed to save in the system
-             */
             @Override
             public void onBitmapFailed(Drawable errorDrawable) {
 
             }
 
-            /**
-             * Callback invoked right before your request is submitted.
-             * <strong>Note:</strong> The passed {@link Drawable} may be {@code null} if none has been
-             * specified via {@link RequestCreator#placeholder(Drawable)}
-             * or {@link RequestCreator#placeholder(int)}.
-             *
-             * @param placeHolderDrawable    the place holder for the drawable
-             */
             @Override
             public void onPrepareLoad(Drawable placeHolderDrawable) {
 
             }
         };
+    }
 
-        mResquest_creator.into(target);
+    protected void workGetImage(ImageView imageView) {
+        imageView.setDrawingCacheEnabled(true);
+        imageView.measure(View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED), View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED));
+        imageView.layout(0, 0, imageView.getMeasuredWidth(), imageView.getMeasuredHeight());
+        imageView.buildDrawingCache(true);
+        output_bitmap = Bitmap.createBitmap(imageView.getDrawingCache());
+        imageView.setDrawingCacheEnabled(false);
+    }
 
+    private Bitmap output_bitmap = null;
+
+    private class getImageTask extends AsyncTask<Void, Void, Integer> {
+        private ImageView imageView;
+
+        public getImageTask(ImageView taskTarget) {
+            imageView = taskTarget;
+        }
+
+        @Override
+        protected Integer doInBackground(Void... params) {
+            int tried = 0;
+            while (tried < 5) {
+                try {
+                    workGetImage(imageView);
+                    return 1;
+                } catch (Exception e) {
+                    tried++;
+                }
+            }
+            return 0;
+        }
+
+        @Override
+        protected void onPostExecute(Integer result) {
+            super.onPostExecute(result);
+            if (result == 1) {
+                CapturePhotoUtils.insertImage(mContext, output_bitmap, mDescription, new CapturePhotoUtils.Callback() {
+                            @Override
+                            public void complete() {
+                                nh.post(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        if (fmg == null) return;
+                                        String note = mContext.getString(notice_save_image_success);
+                                        final SMessage sm = SMessage.message(note);
+                                        sm.show(fmg.get(), "done");
+                                    }
+                                });
+                            }
+                        }
+                );
+            } else {
+                String m = mContext.getString(R.string.image_not_read);
+                final SMessage sm = SMessage.message(m);
+                sm.show(fmg.get(), "try again");
+            }
+        }
     }
 
 
@@ -475,6 +648,7 @@ public abstract class BaseSliderView {
     public class saveImageDialog extends DialogFragment {
         @Override
         public Dialog onCreateDialog(Bundle savedInstanceState) {
+            if (mContext == null) return null;
             // Use the Builder class for convenient dialog construction
             AlertDialog.Builder builder = new AlertDialog.Builder(mContext);
             builder.setMessage(R.string.save_image)
@@ -494,13 +668,26 @@ public abstract class BaseSliderView {
     }
 
     protected void saveImageActionTrigger() {
-        saveImage(rq);
+        if (current_image_holder == null) return;
+        if (current_image_holder instanceof ImageView) {
+            ImageView fast = (ImageView) current_image_holder;
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                if (mContext.getApplicationContext().checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+                    //   mContext.requestPermissions(new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, AnyNumber);
+                } else {
+                    getImageTask t = new getImageTask(fast);
+                    t.execute();
+                }
+            } else {
+                getImageTask t = new getImageTask(fast);
+                t.execute();
+            }
+        }
     }
 
     @TargetApi(Build.VERSION_CODES.JELLY_BEAN)
-    protected void hideoutView(@Nullable final View view) {
+    final protected void hideoutView(@Nullable final View view) {
         if (view == null) return;
-
         view.animate().alpha(0f).withEndAction(new Runnable() {
             @Override
             public void run() {
@@ -552,6 +739,10 @@ public abstract class BaseSliderView {
         void onStart(BaseSliderView target);
 
         void onEnd(boolean result, BaseSliderView target);
+    }
+
+    public Object getImageView() {
+        return current_image_holder;
     }
 
 }

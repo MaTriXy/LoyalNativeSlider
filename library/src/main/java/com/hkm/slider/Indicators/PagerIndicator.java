@@ -3,13 +3,14 @@ package com.hkm.slider.Indicators;
 import android.content.Context;
 import android.content.res.TypedArray;
 import android.database.DataSetObserver;
-import android.graphics.Color;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
 import android.graphics.drawable.LayerDrawable;
 import android.graphics.drawable.ShapeDrawable;
+import android.support.annotation.ColorInt;
 import android.support.annotation.ColorRes;
 import android.support.annotation.DrawableRes;
+import android.support.v4.content.ContextCompat;
 import android.support.v4.view.PagerAdapter;
 import android.util.AttributeSet;
 import android.view.View;
@@ -17,8 +18,8 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 
 import com.hkm.slider.R;
-import com.hkm.slider.Tricks.InfinitePagerAdapter;
 import com.hkm.slider.SliderAdapter;
+import com.hkm.slider.Tricks.InfinitePagerAdapter;
 import com.hkm.slider.Tricks.ViewPagerEx;
 
 import java.util.ArrayList;
@@ -144,8 +145,10 @@ public class PagerIndicator extends LinearLayout implements ViewPagerEx.OnPageCh
         mUserSetUnSelectedIndicatorResId = attributes.getResourceId(R.styleable.PagerIndicator_unselected_drawable,
                 0);
 
-        mDefaultSelectedColor = attributes.getColor(R.styleable.PagerIndicator_selected_color, Color.rgb(70, 70, 70));
-        mDefaultUnSelectedColor = attributes.getColor(R.styleable.PagerIndicator_unselected_color, Color.argb(33, 148, 148, 148));
+        mDefaultSelectedColor = attributes.getColor(R.styleable.PagerIndicator_selected_color,
+                ContextCompat.getColor(mContext, R.color.default_nsl_light));
+        mDefaultUnSelectedColor = attributes.getColor(R.styleable.PagerIndicator_unselected_color,
+                ContextCompat.getColor(mContext, R.color.default_nsl_dark));
 
         mDefaultSelectedWidth = attributes.getDimension(R.styleable.PagerIndicator_selected_width, (int) pxFromDp(6));
         mDefaultSelectedHeight = attributes.getDimensionPixelSize(R.styleable.PagerIndicator_selected_height, (int) pxFromDp(6));
@@ -259,14 +262,33 @@ public class PagerIndicator extends LinearLayout implements ViewPagerEx.OnPageCh
         if (selected == 0) {
             mSelectedDrawable = mSelectedLayerDrawable;
         } else {
-            mSelectedDrawable = mContext.getResources().getDrawable(mUserSetSelectedIndicatorResId);
+            mSelectedDrawable = ContextCompat.getDrawable(mContext, mUserSetSelectedIndicatorResId);
+            //   mSelectedDrawable = mContext.getResources().getDrawable(mUserSetSelectedIndicatorResId);
         }
         if (unselected == 0) {
             mUnselectedDrawable = mUnSelectedLayerDrawable;
         } else {
-            mUnselectedDrawable = mContext.getResources().getDrawable(mUserSetUnSelectedIndicatorResId);
+            mUnselectedDrawable = ContextCompat.getDrawable(mContext, mUserSetUnSelectedIndicatorResId);
+            //   mUnselectedDrawable = mContext.getResources().getDrawable(mUserSetUnSelectedIndicatorResId);
         }
 
+        resetDrawable();
+    }
+
+    /**
+     * if you are using the default indicator , this method will help you to set the selected status and
+     * the unselected status color.
+     *
+     * @param selectedColor   color in packet int
+     * @param unselectedColor color in packed int
+     */
+    public void setDefaultIndicatorColor(@ColorInt final int selectedColor, @ColorInt  final int unselectedColor) {
+        if (mUserSetSelectedIndicatorResId == 0) {
+            mSelectedGradientDrawable.setColor(selectedColor);
+        }
+        if (mUserSetUnSelectedIndicatorResId == 0) {
+            mUnSelectedGradientDrawable.setColor(unselectedColor);
+        }
         resetDrawable();
     }
 
@@ -277,20 +299,9 @@ public class PagerIndicator extends LinearLayout implements ViewPagerEx.OnPageCh
      * @param selectedColor   color in resource id
      * @param unselectedColor color in resource id
      */
-    public void setDefaultIndicatorColor(@ColorRes final int selectedColor, @ColorRes final int unselectedColor) {
-        try {
-            if (mUserSetSelectedIndicatorResId == 0) {
-                final int a = mContext.getResources().getColor(selectedColor);
-                mSelectedGradientDrawable.setColor(a);
-            }
-            if (mUserSetUnSelectedIndicatorResId == 0) {
-                final int u = mContext.getResources().getColor(unselectedColor);
-                mUnSelectedGradientDrawable.setColor(u);
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        resetDrawable();
+    public void setDefaultIndicatorColorRes(@ColorRes final int selectedColor, @ColorRes final int unselectedColor) {
+        setDefaultIndicatorColor(ContextCompat.getColor(mContext, selectedColor),
+                ContextCompat.getColor(mContext, unselectedColor));
     }
 
     public enum Unit {

@@ -23,7 +23,8 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
- * Created by hesk on 19/11/15.
+ * This is the Sample Compact Slider View with Image display only
+ * this is the demonstration of a simple way to implementat a compact slider view
  */
 public class CompactSliderView extends BaseSliderView {
     protected boolean loadingProgress = false;
@@ -84,11 +85,11 @@ public class CompactSliderView extends BaseSliderView {
         return layoutview;
     }
 
-    protected void filter_apply_event_to_view(int f) {
-        bindEventAndShow(getImView(f), urls.get(f));
+    protected void filter_apply_event_to_view(final int nOrder) {
+        bindEventAndShow(getImView(nOrder), urls.get(nOrder));
         final CompactSliderView me = this;
-        final String h = uris.size() > 0 ? uris.get(f) : null;
-        getImView(f).setOnClickListener(new View.OnClickListener() {
+        final String h = uris.size() > 0 ? uris.get(nOrder) : null;
+        getImView(nOrder).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 if (mOnSliderClickListener != null && h != null) {
@@ -155,14 +156,6 @@ public class CompactSliderView extends BaseSliderView {
         return Uri.parse(link_on_click_current);
     }
 
-    @Override
-    protected void saveImageActionTrigger() {
-        if (prepare_request_save_image != null) {
-            saveImage(prepare_request_save_image);
-        }
-    }
-
-
     private void bindEventAndShow(
             @NonNull final ImageView targetImageView,
             @NonNull final String mURI
@@ -206,7 +199,7 @@ public class CompactSliderView extends BaseSliderView {
                         public boolean onLongClick(View v) {
                             prepare_request_save_image = mreq;
                             final saveImageDialog saveImageDial = new saveImageDialog();
-                            saveImageDial.show(fmg, "DESC_SAVE_IM");
+                            saveImageDial.show(fmg.get(), "DESC_SAVE_IM");
                             return false;
                         }
                     });
