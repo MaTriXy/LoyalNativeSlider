@@ -1,7 +1,11 @@
 # Loyal Native Slider
-[![Android Arsenal](https://img.shields.io/badge/Android%20Arsenal-Loyal%20Native%20Slider-brightgreen.svg?style=flat)][6][ ![Download](https://api.bintray.com/packages/jjhesk/maven/library/images/download.svg) ][7][![Android Gems](http://www.android-gems.com/badge/jjhesk/LoyalNativeSlider.svg?branch=master)][8][![Gitter](https://badges.gitter.im/Join Chat.svg)][9]
+[![Android Arsenal](https://img.shields.io/badge/Android%20Arsenal-Loyal%20Native%20Slider-brightgreen.svg?style=flat)](http://android-arsenal.com/details/1/1998)
+[![Download](https://api.bintray.com/packages/jjhesk/maven/library/images/download.svg)](https://bintray.com/jjhesk/maven/library/_latestVersion)
+[![Android Gems](http://www.android-gems.com/badge/jjhesk/LoyalNativeSlider.svg?branch=master)](http://www.android-gems.com/lib/jjhesk/LoyalNativeSlider)
 
-[![Throughput Graph](https://graphs.waffle.io/jjhesk/LoyalNativeSlider/throughput.svg)][14]
+[![Gitter](https://badges.gitter.im/Join Chat.svg)](https://gitter.im/daimajia/AndroidImageSlider?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)]
+
+[![Throughput Graph](https://graphs.waffle.io/jjhesk/LoyalNativeSlider/throughput.svg)](https://waffle.io/jjhesk/LoyalNativeSlider/metrics)
 
 This is an amazing image slider for the Android platform. I decided to open source this because there is really not an attractive, convenient slider widget in Android. You can easily load images from an internet URL, drawable, or file. And there are many kinds of amazing animations you can choose. :-D
 
@@ -11,14 +15,14 @@ Please also check the latest release testing apk from the [log history](loghisto
 ## Usage
 ### Step 1
 #### Gradle
-[![Download](https://api.bintray.com/packages/jjhesk/maven/library/images/download.svg) ](https://bintray.com/jjhesk/maven/library/_latestVersion)
+[![Download](https://api.bintray.com/packages/jjhesk/maven/library/images/download.svg)](https://bintray.com/jjhesk/maven/library/_latestVersion)
 
 JCenter is the place to find and share popular Apache Maven packages for use by Maven, Gradle, Ivy, SBT, etc.
 For the most comprehensive collection of artifacts, point your Maven at: `http://jcenter.bintray.com`
 
 ```gradle
 dependencies {
-    compile 'com.hkm.loyalslider:library:1.9.4'
+    compile 'com.hkm.loyalslider:library:1.12.1'
 }
 ```
 
@@ -124,9 +128,8 @@ Please visit [Wiki](https://github.com/daimajia/AndroidImageSlider/wiki) for the
 
 If there are someone who I do not mention here, please accept my sincere appologies and tell me.
 
-###Bitcoin Donation Accepted
+### Thank you for your support and we will bring more amazing libraries to your productive works. We are accepting bitcoin by the address as below. Please scan the QR code to start
 ![wallet](http://s32.postimg.org/sdd1oio1t/qrwallet.jpg)
-Open Donation - USD: [![OPEN](http://i.imgur.com/wUWK6e1.jpg)][1]
 
 License
 --------
@@ -147,6 +150,7 @@ License
 
 
 ##About me
+
 [1]: https://www.paypal.com/cgi-bin/webscr?cmd=_xclick&business=ooxfordck@gmail.com&currency_code=USD&amount=&return=&item_name=LoyalSliderDonation
 [2]: https://github.com/square/picasso
 [3]: https://github.com/JakeWharton/NineOldAndroids

@@ -12,6 +12,7 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
+import android.graphics.Typeface;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.AsyncTask;
@@ -23,13 +24,17 @@ import android.support.annotation.StringRes;
 import android.support.v7.app.AlertDialog;
 import android.view.View;
 import android.widget.ImageView;
+import android.widget.TextView;
 
-import com.bumptech.glide.DrawableTypeRequest;
 import com.bumptech.glide.Glide;
+import com.bumptech.glide.RequestBuilder;
 import com.bumptech.glide.RequestManager;
+import com.bumptech.glide.load.DataSource;
 import com.bumptech.glide.load.engine.DiskCacheStrategy;
-import com.bumptech.glide.load.resource.drawable.GlideDrawable;
+import com.bumptech.glide.load.engine.GlideException;
+import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions;
 import com.bumptech.glide.request.RequestListener;
+import com.bumptech.glide.request.RequestOptions;
 import com.hkm.slider.CapturePhotoUtils;
 import com.hkm.slider.LoyalUtil;
 import com.hkm.slider.R;
@@ -90,6 +95,7 @@ public abstract class BaseSliderView {
      * reference of the parent
      */
     protected WeakReference<SliderLayout> sliderContainer;
+    protected Typeface mTypeface;
 
     public void setSliderContainerInternal(SliderLayout b) {
         this.sliderContainer = new WeakReference<SliderLayout>(b);
@@ -123,6 +129,18 @@ public abstract class BaseSliderView {
     public BaseSliderView empty(int resId) {
         mEmptyPlaceHolderRes = resId;
         return this;
+    }
+
+    public BaseSliderView descriptionTypeface(Typeface typeface) {
+        mTypeface = typeface;
+        return this;
+    }
+
+    protected void setupDescription(TextView descTextView) {
+        descTextView.setText(mDescription);
+        if (mTypeface != null) {
+            descTextView.setTypeface(mTypeface);
+        }
     }
 
     /**
@@ -313,67 +331,6 @@ public abstract class BaseSliderView {
     }
 
 
-    protected void bindEventShowGlide(final View v, final ImageView targetImageView) {
-        v.setOnClickListener(click_triggered);
-        final RequestManager glideRM = Glide.with(mContext);
-        DrawableTypeRequest rq;
-        if (mUrl != null) {
-            rq = glideRM.load(mUrl);
-        } else if (mFile != null) {
-            rq = glideRM.load(mFile);
-        } else if (mRes != 0) {
-            rq = glideRM.load(mRes);
-        } else {
-            return;
-        }
-
-        if (getEmpty() != 0) {
-            rq.placeholder(getEmpty());
-        }
-        if (getError() != 0) {
-            rq.error(getError());
-        }
-
-        switch (mScaleType) {
-            case Fit:
-                rq.fitCenter();
-                break;
-            case CenterCrop:
-                rq.centerCrop();
-                break;
-            case CenterInside:
-                rq.fitCenter();
-                break;
-        }
-        rq.diskCacheStrategy(DiskCacheStrategy.ALL);
-        if (mTargetWidth > 0 || mTargetHeight > 0) {
-            rq.override(mTargetWidth, mTargetHeight);
-        }
-        rq.listener(new RequestListener<String, GlideDrawable>() {
-            @Override
-            public boolean onException(Exception e, String model, com.bumptech.glide.request.target.Target<GlideDrawable> target, boolean isFirstResource) {
-                reportStatusEnd(false);
-                return false;
-            }
-
-
-            @Override
-            public boolean onResourceReady(GlideDrawable resource, String model, com.bumptech.glide.request.target.Target<GlideDrawable> target, boolean isFromMemoryCache, boolean isFirstResource) {
-                hideLoadingProgress(v);
-                triggerOnLongClick(v);
-                reportStatusEnd(true);
-                return false;
-            }
-        });
-        rq.crossFade();
-        additionalGlideModifier(rq);
-        rq.into(targetImageView);
-    }
-
-    protected void additionalGlideModifier(DrawableTypeRequest mDrawableTypeRequest) {
-
-    }
-
     protected void hideLoadingProgress(View mView) {
         if (mView.findViewById(R.id.ns_loading_progress) != null) {
             hideoutView(mView.findViewById(R.id.ns_loading_progress));
@@ -476,6 +433,72 @@ public abstract class BaseSliderView {
         });
     }
 
+    protected void bindEventShowGlide(final View v, final ImageView targetImageView) {
+        RequestOptions requestOptions = new RequestOptions();
+
+        v.setOnClickListener(click_triggered);
+        final RequestManager glideRM = Glide.with(mContext);
+        RequestBuilder rq;
+        if (mUrl != null) {
+            rq = glideRM.load(mUrl);
+        } else if (mFile != null) {
+            rq = glideRM.load(mFile);
+        } else if (mRes != 0) {
+            rq = glideRM.load(mRes);
+        } else {
+            return;
+        }
+
+        if (getEmpty() != 0) {
+            requestOptions.placeholder(getEmpty());
+        }
+        if (getError() != 0) {
+            requestOptions.error(getError());
+        }
+
+        switch (mScaleType) {
+            case Fit:
+                requestOptions.fitCenter();
+                break;
+            case CenterCrop:
+                requestOptions.centerCrop();
+                break;
+            case CenterInside:
+                requestOptions.fitCenter();
+                break;
+        }
+
+        requestOptions.diskCacheStrategy(DiskCacheStrategy.ALL);
+        if (mTargetWidth > 0 || mTargetHeight > 0) {
+            requestOptions.override(mTargetWidth, mTargetHeight);
+        }
+
+        rq.apply(requestOptions);
+
+        rq.listener(new RequestListener() {
+            @Override
+            public boolean onLoadFailed(@Nullable GlideException e, Object model, com.bumptech.glide.request.target.Target target, boolean isFirstResource) {
+                reportStatusEnd(false);
+                return false;
+            }
+
+            @Override
+            public boolean onResourceReady(Object resource, Object model, com.bumptech.glide.request.target.Target target, DataSource dataSource, boolean isFirstResource) {
+                hideLoadingProgress(v);
+                triggerOnLongClick(v);
+                reportStatusEnd(true);
+                return false;
+            }
+        });
+        rq.transition(DrawableTransitionOptions.withCrossFade());
+
+        additionalGlideModifier(rq);
+        rq.into(targetImageView);
+    }
+
+    protected void additionalGlideModifier(RequestBuilder requestBuilder) {
+
+    }
     protected void applyImageWithGlide(View v, final ImageView targetImageView) {
         current_image_holder = targetImageView;
         LoyalUtil.glideImplementation(getUrl(), targetImageView, getContext());
@@ -615,7 +638,10 @@ public abstract class BaseSliderView {
         }
     }
 
-
+    /**
+     * should use OnImageSavedListener instead or other listener for dialogs
+     */
+    @Deprecated
     @SuppressLint("ValidFragment")
     @TargetApi(Build.VERSION_CODES.HONEYCOMB)
     public static class SMessage extends DialogFragment {
@@ -745,4 +771,19 @@ public abstract class BaseSliderView {
         return current_image_holder;
     }
 
+    public interface OnImageSavedListener {
+        void onImageSaved(String description);
+
+        void onImageSaveFailed();
+    }
+
+    protected OnImageSavedListener onImageSavedListener = null;
+
+    public OnImageSavedListener getOnImageSavedListener() {
+        return onImageSavedListener;
+    }
+
+    public void setOnImageSavedListener(OnImageSavedListener onImageSavedListener) {
+        this.onImageSavedListener = onImageSavedListener;
+    }
 }
